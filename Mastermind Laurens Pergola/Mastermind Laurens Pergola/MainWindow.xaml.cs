@@ -17,7 +17,8 @@ namespace Mastermind
         private List<Brush> ellipseColor = new List<Brush> { Brushes.Red, Brushes.Yellow, Brushes.Orange, Brushes.White, Brushes.Green, Brushes.Blue };
         private string[] highscores = new string[15];
         private List<string> spelers = new List<string>();
-        private int aantalKleuren = 4; 
+        private int aantalKleuren = 4;
+        private int actieveSpelerIndex = 0;
 
 
         private int maxPogingen = 10;
@@ -42,7 +43,6 @@ namespace Mastermind
         }
 
         // --------------------------- Game Initialization Methods ---------------------------
-
         private void InitializeGame()
         {
             Title = $"Mastermind - Beurt van: {spelers[0]}";
@@ -59,12 +59,20 @@ namespace Mastermind
 
             ResetAllColors();
             UpdateScoreLabel(new string[0]);
-            StartCountDown(); 
+            UpdatePlayerLabels();
+            StartCountDown();
         }
 
-
-
-
+        private void UpdatePlayerLabels()
+        {
+            for (int i = 0; i < playerLabelsPanel.Children.Count; i++)
+            {
+                if (playerLabelsPanel.Children[i] is Label spelerLabel)
+                {
+                    spelerLabel.Background = (i == actieveSpelerIndex) ? Brushes.Gold : Brushes.LightGray;
+                }
+            }
+        }
 
         private void Timer_Tick(object sender, EventArgs e)
         {
@@ -90,9 +98,6 @@ namespace Mastermind
 
             timerCounter.Text = countDown.ToString();
         }
-
-
-
         private void StartCountDown()
         {
             if (timer.IsEnabled)
@@ -100,7 +105,7 @@ namespace Mastermind
                 timer.Stop();
             }
 
-            countDown = 10; 
+            countDown = 10;
             timer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(1)
@@ -108,8 +113,6 @@ namespace Mastermind
             timer.Tick += Timer_Tick;
             timer.Start();
         }
-
-
 
         private void StopCountDown()
         {
@@ -119,12 +122,14 @@ namespace Mastermind
             }
         }
 
-
-
         private void GameOver()
         {
-            string huidigeSpeler = spelers[0];
-            string volgendeSpeler = spelers.Count > 1 ? spelers[1] : spelers[0];
+            actieveSpelerIndex = (actieveSpelerIndex + 1) % spelers.Count;
+
+            UpdatePlayerLabels();
+
+            string huidigeSpeler = spelers[(actieveSpelerIndex - 1 + spelers.Count) % spelers.Count];
+            string volgendeSpeler = spelers[actieveSpelerIndex];
 
             AddHighscore(huidigeSpeler, attempts, totalScore);
 
@@ -134,16 +139,9 @@ namespace Mastermind
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
 
-            spelers.Add(spelers[0]);
-            spelers.RemoveAt(0);
-
             if (result == MessageBoxResult.Yes)
             {
-                string nieuweSpeler = spelers[0];
-                MessageBox.Show($"Speler {nieuweSpeler} is nu aan de beurt!", "Volgende Beurt", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                Title = $"Mastermind - Beurt van: {nieuweSpeler}";
-                InitializeGame();
+                InitializeGame(); 
                 StartCountDown();
             }
             else
@@ -157,15 +155,8 @@ namespace Mastermind
 
 
 
-
-
-
-
-        // --------------------------- New StartGame Method ---------------------------
-
         private void StartGame()
         {
-            // Vraag hoeveel kleuren wrmee wilt spelen
             string aantalKleurenInput = Microsoft.VisualBasic.Interaction.InputBox(
                 "Met hoeveel kleuren wil je spelen? (4, 5 of 6)",
                 "Aantal Kleuren",
@@ -178,6 +169,8 @@ namespace Mastermind
             }
 
             spelers.Clear();
+            playerLabelsPanel.Children.Clear();
+            actieveSpelerIndex = 0;
 
             do
             {
@@ -194,11 +187,31 @@ namespace Mastermind
 
                 spelers.Add(naam);
 
+                // Voeg label toe voor de speler
+                Label spelerLabel = new Label
+                {
+                    Content = naam,
+                    Width = 150,
+                    Height = 50,
+                    HorizontalContentAlignment = HorizontalAlignment.Center,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Background = Brushes.LightGray,
+                    BorderBrush = Brushes.Black,
+                    BorderThickness = new Thickness(2),
+                    Margin = new Thickness(5),
+                    Foreground = Brushes.Black
+                };
+
+                playerLabelsPanel.Children.Add(spelerLabel);
             } while (MessageBox.Show("Wil je nog een speler toevoegen?", "Meer Spelers", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes);
 
             if (spelers.Count > 0)
             {
                 MessageBox.Show($"Spelers: {string.Join(", ", spelers)}", "Spelerslijst", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                UpdatePlayerLabels();
                 InitializeGame();
             }
             else
@@ -206,7 +219,10 @@ namespace Mastermind
                 MessageBox.Show("Geen spelers toegevoegd. Het spel kan niet starten.", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        // --------------------------- Player Interaction Methods ---------------------------
+
+
+
+
 
         private void ControlButton_Click(object sender, RoutedEventArgs e)
         {
@@ -232,7 +248,6 @@ namespace Mastermind
             UpdateScoreLabel(selectedColors);
             StartCountDown();
         }
-
 
         private void CheckGuess(string[] selectedColors)
         {
@@ -283,16 +298,16 @@ namespace Mastermind
 
             if (correctPosition == aantalKleuren)
             {
-                AddHighscore(spelers[0], attempts, totalScore);
+                AddHighscore(spelers[actieveSpelerIndex], attempts, totalScore);
                 timer.Stop();
 
-                spelers.Add(spelers[0]);
-                spelers.RemoveAt(0);
+                actieveSpelerIndex = (actieveSpelerIndex + 1) % spelers.Count;
 
-                string nieuweSpeler = spelers[0];
+                UpdatePlayerLabels(); 
+
                 MessageBoxResult result = MessageBox.Show(
-                    $"Proficiat! Speler {spelers[^1]} heeft de code gekraakt in {attempts} pogingen!\n\nSpeler {nieuweSpeler} is nu aan de beurt.\nDruk op ja om te starten?",
-                    $"Speler {spelers[^1]} wint!",
+                    $"Proficiat! Speler {spelers[(actieveSpelerIndex - 1 + spelers.Count) % spelers.Count]} heeft de code gekraakt in {attempts} pogingen!\n\nSpeler {spelers[actieveSpelerIndex]} is nu aan de beurt.\nDruk op ja om te starten?",
+                    $"Speler {spelers[(actieveSpelerIndex - 1 + spelers.Count) % spelers.Count]} wint!",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Information);
 
@@ -306,6 +321,8 @@ namespace Mastermind
                     MessageBox.Show("Het spel eindigt hier. Bedankt voor het spelen!", "Einde Spel", MessageBoxButton.OK, MessageBoxImage.Information);
                     Application.Current.Shutdown();
                 }
+
+                return;
             }
 
             AddAttemptToHistory(selectedColors, feedbackBorders);
@@ -342,8 +359,6 @@ namespace Mastermind
             historyPanel.Children.Add(attemptPanel);
         }
 
-
-
         private void UpdateScoreLabel(string[] selectedColors)
         {
             int scorePenalty = 0;
@@ -379,7 +394,7 @@ namespace Mastermind
 
             totalScore -= scorePenalty;
             if (totalScore < 0) totalScore = 0;
-            scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
+            scoreLabel.Text = $"Speler: {spelers[actieveSpelerIndex]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
         }
 
         private void UpdateTitle()
@@ -407,9 +422,6 @@ namespace Mastermind
                 colorPicker.Items.Add(colorEllipse);
             }
         }
-
-
-
 
         private string GetColorName(Brush brush)
         {
@@ -475,7 +487,6 @@ namespace Mastermind
             }
         }
 
-
         private void SortHighscores()
         {
             highscores = highscores
@@ -522,6 +533,7 @@ namespace Mastermind
         {
             this.Close();
         }
+
         private void HintButton_Click(object sender, RoutedEventArgs e)
         {
             MessageBoxResult hintType = MessageBox.Show(
@@ -534,7 +546,6 @@ namespace Mastermind
 
             if (hintType == MessageBoxResult.Cancel)
             {
-               
                 return;
             }
 
@@ -571,6 +582,5 @@ namespace Mastermind
         {
             scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
         }
-
     }
 }
