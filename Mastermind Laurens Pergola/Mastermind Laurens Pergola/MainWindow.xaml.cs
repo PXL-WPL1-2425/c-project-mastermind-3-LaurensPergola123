@@ -43,14 +43,14 @@ namespace Mastermind
 
         private void InitializeGame()
         {
-            Title = $"Mastermind - Beurt van: {spelers[0]}"; // Zet titel naar huidige speler
+            Title = $"Mastermind - Beurt van: {spelers[0]}";
             Random number = new Random();
             secretCode = Enumerable.Range(0, 4)
                              .Select(_ => colors[number.Next(colors.Length)])
                              .ToArray();
             cheatCode.Text = string.Join(" ", secretCode);
             totalScore = 100;
-            scoreLabel.Text = $"Score: {totalScore}";
+            scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
             attempts = 0;
             countDown = 10;
             historyPanel.Children.Clear();
@@ -58,39 +58,57 @@ namespace Mastermind
         }
 
 
+
         private void Timer_Tick(object sender, EventArgs e)
         {
             countDown--;
-            timerCounter.Text = $"{countDown}";
-            if (countDown == 0)
+
+            if (countDown < 0)
             {
-                attempts++;
                 timer.Stop();
+                attempts++;
+
                 if (attempts >= maxPogingen)
                 {
                     GameOver();
                     return;
                 }
+
                 MessageBox.Show("Poging kwijt");
-                StopCountDown();
-                UpdateTitle();
+                StartCountDown();
             }
+
+            timerCounter.Text = countDown.ToString();
         }
+
 
         private void StartCountDown()
         {
-            timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromSeconds(1);
+            if (timer.IsEnabled)
+            {
+                timer.Stop();
+            }
+
+            countDown = 10; 
+            timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
             timer.Tick += Timer_Tick;
             timer.Start();
         }
 
+
+
         private void StopCountDown()
         {
-            timer.Stop();
-            countDown = 10;
-            timer.Start();
+            if (timer.IsEnabled)
+            {
+                timer.Stop();
+            }
         }
+
+
 
         private void GameOver()
         {
@@ -105,13 +123,11 @@ namespace Mastermind
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
 
-            
-            spelers.Add(spelers[0]); 
-            spelers.RemoveAt(0); 
+            spelers.Add(spelers[0]);
+            spelers.RemoveAt(0);
 
             if (result == MessageBoxResult.Yes)
             {
-                
                 string nieuweSpeler = spelers[0];
                 MessageBox.Show($"Speler {nieuweSpeler} is nu aan de beurt!", "Volgende Beurt", MessageBoxButton.OK, MessageBoxImage.Information);
 
@@ -125,6 +141,7 @@ namespace Mastermind
                 this.Close();
             }
         }
+
 
 
 
@@ -190,8 +207,10 @@ namespace Mastermind
 
             CheckGuess(selectedColors);
             UpdateScoreLabel(selectedColors);
-            StopCountDown();
+
+            StartCountDown();
         }
+
 
         private void CheckGuess(string[] selectedColors)
         {
@@ -251,7 +270,7 @@ namespace Mastermind
 
                 string nieuweSpeler = spelers[0];
                 MessageBoxResult result = MessageBox.Show(
-                    $"Proficiat! Speler {spelers[^1]} heeft de code gekraakt in {attempts} pogingen!\n\nSpeler {nieuweSpeler} is nu aan de beurt.\nWil je een nieuw spel starten?",
+                    $"Proficiat! Speler {spelers[^1]} heeft de code gekraakt in {attempts} pogingen!\n\nSpeler {nieuweSpeler} is nu aan de beurt.\nDruk op ja om te starten?",
                     $"Speler {spelers[^1]} wint!",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Information);
@@ -331,13 +350,15 @@ namespace Mastermind
 
             totalScore -= scorePenalty;
             if (totalScore < 0) totalScore = 0;
-            scoreLabel.Text = $"Score: {totalScore}";
+            scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
         }
+
 
         private void UpdateTitle()
         {
-            this.Title = $"Poging {attempts}";
+            this.Title = $"Mastermind - Beurt van: {spelers[0]} | Poging {attempts}/{maxPogingen}";
         }
+
 
         private void ResetAllColors()
         {
