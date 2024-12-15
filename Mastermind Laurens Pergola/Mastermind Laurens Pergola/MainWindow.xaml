@@ -93,7 +93,6 @@
         <!-- Header Section -->
         <StackPanel Grid.Row="0" Orientation="Vertical" HorizontalAlignment="Center" Margin="0,20,0,0">
             <TextBlock Text="Mastermind" FontSize="26" Foreground="White" FontWeight="Bold" TextAlignment="Center"/>
-            <TextBlock Text="Raad de geheime code van 4 kleuren!" FontSize="18" Foreground="White"/>
         </StackPanel>
 
         <!-- Timer Section -->
@@ -102,13 +101,21 @@
             <TextBlock x:Name="timerCounter" FontSize="24" Foreground="Red" FontWeight="Bold"/>
         </StackPanel>
 
-        <!-- Color Selection -->
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-            <Ellipse x:Name="kleur1" Fill="Red" Style="{StaticResource ColorEllipseStyle}" MouseDown="color_MouseDown"/>
-            <Ellipse x:Name="kleur2" Fill="Blue" Style="{StaticResource ColorEllipseStyle}" MouseDown="color_MouseDown"/>
-            <Ellipse x:Name="kleur3" Fill="Green" Style="{StaticResource ColorEllipseStyle}" MouseDown="color_MouseDown"/>
-            <Ellipse x:Name="kleur4" Fill="Yellow" Style="{StaticResource ColorEllipseStyle}" MouseDown="color_MouseDown"/>
-        </StackPanel>
+        <!-- Colr Selection aangepast  -->
+        <ItemsControl Grid.Row="2" x:Name="colorPicker" HorizontalAlignment="Center" Margin="10">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Ellipse Width="70" Height="70" Stroke="White" StrokeThickness="2" Margin="5"/>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+
 
         <!-- Check Guess Button -->
         <Button Grid.Row="3" Content="Check Guess" Style="{StaticResource GameButtonStyle}" Click="ControlButton_Click"/>

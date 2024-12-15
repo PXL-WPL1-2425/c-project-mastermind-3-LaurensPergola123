@@ -17,6 +17,8 @@ namespace Mastermind
         private List<Brush> ellipseColor = new List<Brush> { Brushes.Red, Brushes.Yellow, Brushes.Orange, Brushes.White, Brushes.Green, Brushes.Blue };
         private string[] highscores = new string[15];
         private List<string> spelers = new List<string>();
+        private int aantalKleuren = 4; 
+
 
         private int maxPogingen = 10;
         public int MaxPogingen
@@ -45,17 +47,24 @@ namespace Mastermind
         {
             Title = $"Mastermind - Beurt van: {spelers[0]}";
             Random number = new Random();
-            secretCode = Enumerable.Range(0, 4)
-                             .Select(_ => colors[number.Next(colors.Length)])
-                             .ToArray();
+            secretCode = Enumerable.Range(0, aantalKleuren)
+                                  .Select(_ => colors[number.Next(colors.Length)])
+                                  .ToArray();
+
             cheatCode.Text = string.Join(" ", secretCode);
             totalScore = 100;
-            scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
             attempts = 0;
             countDown = 10;
             historyPanel.Children.Clear();
+
             ResetAllColors();
+            UpdateScoreLabel(new string[0]);
+            StartCountDown(); 
         }
+
+
+
+
 
         private void Timer_Tick(object sender, EventArgs e)
         {
@@ -64,7 +73,7 @@ namespace Mastermind
             if (countDown < 0)
             {
                 timer.Stop();
-                attempts++; // Zorg ervoor dat de poging omhoog gaat
+                attempts++;
 
                 if (attempts >= maxPogingen)
                 {
@@ -74,11 +83,8 @@ namespace Mastermind
 
                 MessageBox.Show("Poging kwijt!", "Tijd voorbij", MessageBoxButton.OK, MessageBoxImage.Warning);
 
-                // Update de titel en score om de nieuwe poging weer te geven
                 UpdateTitle();
                 UpdateScoreOnly();
-
-                // Start een nieuwe poging met een nieuwe timer
                 StartCountDown();
             }
 
@@ -123,7 +129,7 @@ namespace Mastermind
             AddHighscore(huidigeSpeler, attempts, totalScore);
 
             MessageBoxResult result = MessageBox.Show(
-                $"Game Over! De code was: {string.Join(" ", secretCode)}\n\nSpeler {huidigeSpeler}, wil je nog eens spelen?\nVolgende speler: {volgendeSpeler}",
+                $"Game Over! De code was: {string.Join(" ", secretCode)}\n\n\nVolgende speler: {volgendeSpeler}, \nDruk Yes om te starten.",
                 $"Game Over - Speler: {huidigeSpeler}",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
@@ -159,6 +165,18 @@ namespace Mastermind
 
         private void StartGame()
         {
+            // Vraag hoeveel kleuren wrmee wilt spelen
+            string aantalKleurenInput = Microsoft.VisualBasic.Interaction.InputBox(
+                "Met hoeveel kleuren wil je spelen? (4, 5 of 6)",
+                "Aantal Kleuren",
+                "4");
+
+            if (!int.TryParse(aantalKleurenInput, out aantalKleuren) || aantalKleuren < 4 || aantalKleuren > 6)
+            {
+                MessageBox.Show("Ongeldig aantal kleuren gekozen. Standaard wordt 4 kleuren gebruikt.", "Fout", MessageBoxButton.OK, MessageBoxImage.Warning);
+                aantalKleuren = 4;
+            }
+
             spelers.Clear();
 
             do
@@ -181,23 +199,23 @@ namespace Mastermind
             if (spelers.Count > 0)
             {
                 MessageBox.Show($"Spelers: {string.Join(", ", spelers)}", "Spelerslijst", MessageBoxButton.OK, MessageBoxImage.Information);
+                InitializeGame();
             }
             else
             {
                 MessageBox.Show("Geen spelers toegevoegd. Het spel kan niet starten.", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
         // --------------------------- Player Interaction Methods ---------------------------
 
         private void ControlButton_Click(object sender, RoutedEventArgs e)
         {
-            List<Ellipse> ellipses = new List<Ellipse> { kleur1, kleur2, kleur3, kleur4 };
+            var ellipses = colorPicker.Items.OfType<Ellipse>().ToList();
             string[] selectedColors = ellipses.Select(e => GetColorName(e.Fill)).ToArray();
 
             if (selectedColors.Any(color => color == "Transparent"))
             {
-                MessageBox.Show("Selecteer vier kleuren!", "Fout", MessageBoxButton.OK);
+                MessageBox.Show("Selecteer alle kleuren!", "Fout", MessageBoxButton.OK);
                 return;
             }
 
@@ -215,13 +233,14 @@ namespace Mastermind
             StartCountDown();
         }
 
+
         private void CheckGuess(string[] selectedColors)
         {
             int correctPosition = 0;
             int correctColor = 0;
 
             List<string> tempSecretCode = new List<string>(secretCode);
-            List<string> tempPlayerGuess = new List<string>(selectedColors);
+            List<string> tempPlayerGuess = selectedColors.Take(aantalKleuren).ToList();
 
             List<Brush> feedbackBorders = new List<Brush>();
 
@@ -262,12 +281,11 @@ namespace Mastermind
                 }
             }
 
-            if (correctPosition == 4)
+            if (correctPosition == aantalKleuren)
             {
                 AddHighscore(spelers[0], attempts, totalScore);
                 timer.Stop();
 
-                
                 spelers.Add(spelers[0]);
                 spelers.RemoveAt(0);
 
@@ -289,8 +307,10 @@ namespace Mastermind
                     Application.Current.Shutdown();
                 }
             }
+
             AddAttemptToHistory(selectedColors, feedbackBorders);
         }
+
 
         private void AddAttemptToHistory(string[] selectedColors, List<Brush> feedbackBorders)
         {
@@ -302,22 +322,18 @@ namespace Mastermind
 
             for (int i = 0; i < selectedColors.Length; i++)
             {
-                // Tooltip adhv feedbackBorderkleuren
-
-                string tooltipText = feedbackBorders[i] == Brushes.DarkRed
-                    ? "Juiste kleur, juiste positie"
-                    : feedbackBorders[i] == Brushes.Wheat
-                        ? "Juiste kleur, foute positie"
-                        : "Foute kleur";
-
                 Ellipse colorBox = new Ellipse
                 {
                     Width = 50,
                     Height = 50,
                     Fill = GetBrushFromColorName(selectedColors[i]),
                     StrokeThickness = 5,
-                    Stroke = feedbackBorders[i],
-                    ToolTip = tooltipText 
+                    Stroke = feedbackBorders.Count > i ? feedbackBorders[i] : Brushes.Transparent,
+                    ToolTip = feedbackBorders.Count > i
+                        ? (feedbackBorders[i] == Brushes.DarkRed ? "Juiste kleur, juiste positie" :
+                           feedbackBorders[i] == Brushes.Wheat ? "Juiste kleur, foute positie" :
+                           "Foute kleur")
+                        : "Foute kleur"
                 };
 
                 attemptPanel.Children.Add(colorBox);
@@ -325,6 +341,7 @@ namespace Mastermind
 
             historyPanel.Children.Add(attemptPanel);
         }
+
 
 
         private void UpdateScoreLabel(string[] selectedColors)
@@ -372,14 +389,27 @@ namespace Mastermind
 
         private void ResetAllColors()
         {
-            List<Ellipse> ellipses = new List<Ellipse> { kleur1, kleur2, kleur3, kleur4 };
+            colorPicker.Items.Clear();
 
-            foreach (Ellipse ellipse in ellipses)
+            for (int i = 0; i < aantalKleuren; i++)
             {
-                ellipse.Fill = Brushes.Red;
-                ellipse.Stroke = Brushes.Transparent;
+                Ellipse colorEllipse = new Ellipse
+                {
+                    Width = 70,
+                    Height = 70,
+                    Fill = ellipseColor[i % ellipseColor.Count],
+                    Stroke = Brushes.Transparent,
+                    StrokeThickness = 2,
+                    Margin = new Thickness(5)
+                };
+
+                colorEllipse.MouseDown += color_MouseDown;
+                colorPicker.Items.Add(colorEllipse);
             }
         }
+
+
+
 
         private string GetColorName(Brush brush)
         {
@@ -435,11 +465,7 @@ namespace Mastermind
 
         private void StartNewGame_Click(object sender, RoutedEventArgs e)
         {
-            if (timer.IsEnabled)
-            {
-                timer.Stop();
-            }
-
+            StopCountDown();
             StartGame();
 
             if (spelers.Count > 0)
@@ -448,6 +474,7 @@ namespace Mastermind
                 StartCountDown();
             }
         }
+
 
         private void SortHighscores()
         {
@@ -479,6 +506,8 @@ namespace Mastermind
 
         private void HighScores_Click(object sender, RoutedEventArgs e)
         {
+            StopCountDown();
+
             if (highscores.All(h => h == null))
             {
                 MessageBox.Show("Er zijn nog geen highscores!", "Highscores", MessageBoxButton.OK, MessageBoxImage.Information);
