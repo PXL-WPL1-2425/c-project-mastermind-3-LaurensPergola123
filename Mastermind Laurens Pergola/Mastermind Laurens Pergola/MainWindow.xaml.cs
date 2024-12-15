@@ -57,8 +57,6 @@ namespace Mastermind
             ResetAllColors();
         }
 
-
-
         private void Timer_Tick(object sender, EventArgs e)
         {
             countDown--;
@@ -66,7 +64,7 @@ namespace Mastermind
             if (countDown < 0)
             {
                 timer.Stop();
-                attempts++;
+                attempts++; // Zorg ervoor dat de poging omhoog gaat
 
                 if (attempts >= maxPogingen)
                 {
@@ -74,12 +72,19 @@ namespace Mastermind
                     return;
                 }
 
-                MessageBox.Show("Poging kwijt");
+                MessageBox.Show("Poging kwijt!", "Tijd voorbij", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                // Update de titel en score om de nieuwe poging weer te geven
+                UpdateTitle();
+                UpdateScoreOnly();
+
+                // Start een nieuwe poging met een nieuwe timer
                 StartCountDown();
             }
 
             timerCounter.Text = countDown.ToString();
         }
+
 
 
         private void StartCountDown()
@@ -207,10 +212,8 @@ namespace Mastermind
 
             CheckGuess(selectedColors);
             UpdateScoreLabel(selectedColors);
-
             StartCountDown();
         }
-
 
         private void CheckGuess(string[] selectedColors)
         {
@@ -286,8 +289,6 @@ namespace Mastermind
                     Application.Current.Shutdown();
                 }
             }
-
-
             AddAttemptToHistory(selectedColors, feedbackBorders);
         }
 
@@ -311,7 +312,6 @@ namespace Mastermind
                 };
                 attemptPanel.Children.Add(colorBox);
             }
-
             historyPanel.Children.Add(attemptPanel);
         }
 
@@ -353,12 +353,10 @@ namespace Mastermind
             scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
         }
 
-
         private void UpdateTitle()
         {
             this.Title = $"Mastermind - Beurt van: {spelers[0]} | Poging {attempts}/{maxPogingen}";
         }
-
 
         private void ResetAllColors()
         {
@@ -483,5 +481,55 @@ namespace Mastermind
         {
             this.Close();
         }
+        private void HintButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult hintType = MessageBox.Show(
+                "Welke hint wil je kopen?\n" +
+                "Ja: Een juiste kleur (-15 strafpunten)\n" +
+                "Nee: Een juiste kleur op de juiste plaats (-25 strafpunten)",
+                "Hint Kopen",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (hintType == MessageBoxResult.Cancel)
+            {
+               
+                return;
+            }
+
+            if (hintType == MessageBoxResult.Yes)
+            {
+                List<string> beschikbareKleuren = secretCode.Distinct().ToList();
+                Random random = new Random();
+                string juisteKleur = beschikbareKleuren[random.Next(beschikbareKleuren.Count)];
+
+                MessageBox.Show($"Een van de kleuren in de geheime code is: {juisteKleur}", "Hint: Juiste Kleur", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                totalScore -= 15;
+            }
+            else if (hintType == MessageBoxResult.No)
+            {
+                List<int> beschikbarePosities = Enumerable.Range(0, secretCode.Length).ToList();
+                Random random = new Random();
+                int juistePositie = beschikbarePosities[random.Next(beschikbarePosities.Count)];
+
+                MessageBox.Show($"De kleur op positie {juistePositie + 1} is: {secretCode[juistePositie]}", "Hint: Juiste Kleur op de Juiste Plaats", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                totalScore -= 25;
+            }
+
+            if (totalScore < 0)
+            {
+                totalScore = 0;
+            }
+
+            UpdateScoreLabel(new string[0]);
+        }
+
+        private void UpdateScoreOnly()
+        {
+            scoreLabel.Text = $"Speler: {spelers[0]} | Score: {totalScore} | Pogingen: {attempts}/{maxPogingen}";
+        }
+
     }
 }

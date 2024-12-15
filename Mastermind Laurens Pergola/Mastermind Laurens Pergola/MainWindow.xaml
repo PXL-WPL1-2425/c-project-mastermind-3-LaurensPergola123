@@ -61,6 +61,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -117,11 +118,15 @@
             <TextBlock x:Name="scoreLabel" FontSize="18" Foreground="White" FontWeight="Bold"/>
         </StackPanel>
 
+        <!-- Hint buttin-->
+        <Button Grid.Row="7" x:Name="HintButton" Content="Hint" Width="100" Height="30" Click="HintButton_Click" />
+
+
         <!-- History Title Section -->
-        <TextBlock Grid.Row="7" Text="Previous Guesses" FontSize="20" Foreground="White" HorizontalAlignment="Center"/>
+        <TextBlock Grid.Row="8" Text="Previous Guesses" FontSize="20" Foreground="White" HorizontalAlignment="Center"/>
 
         <!-- History Display -->
-        <StackPanel Grid.Row="8" x:Name="historyPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10">
+        <StackPanel Grid.Row="9" x:Name="historyPanel" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10">
             <!-- History items will be added here dynamically -->
         </StackPanel>
 
