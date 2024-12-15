@@ -16,7 +16,7 @@ namespace Mastermind
         private string[] secretCode;
         private List<Brush> ellipseColor = new List<Brush> { Brushes.Red, Brushes.Yellow, Brushes.Orange, Brushes.White, Brushes.Green, Brushes.Blue };
         private string[] highscores = new string[15];
-        private string spelerNaam;
+        private List<string> spelers = new List<string>();
 
         private int maxPogingen = 10;
         public int MaxPogingen
@@ -43,6 +43,7 @@ namespace Mastermind
 
         private void InitializeGame()
         {
+            Title = $"Mastermind - Beurt van: {spelers[0]}"; // Zet titel naar huidige speler
             Random number = new Random();
             secretCode = Enumerable.Range(0, 4)
                              .Select(_ => colors[number.Next(colors.Length)])
@@ -55,6 +56,7 @@ namespace Mastermind
             historyPanel.Children.Clear();
             ResetAllColors();
         }
+
 
         private void Timer_Tick(object sender, EventArgs e)
         {
@@ -92,18 +94,75 @@ namespace Mastermind
 
         private void GameOver()
         {
-            AddHighscore(spelerNaam, attempts, totalScore);
+            string huidigeSpeler = spelers[0];
+            string volgendeSpeler = spelers.Count > 1 ? spelers[1] : spelers[0];
 
-            if (MessageBox.Show($"Game Over! De code was: {string.Join(" ", secretCode)}\nWil je een nieuw spel starten?",
-                                "Game Over",
-                                MessageBoxButton.YesNo,
-                                MessageBoxImage.Information) == MessageBoxResult.Yes)
+            AddHighscore(huidigeSpeler, attempts, totalScore);
+
+            MessageBoxResult result = MessageBox.Show(
+                $"Game Over! De code was: {string.Join(" ", secretCode)}\n\nSpeler {huidigeSpeler}, wil je nog eens spelen?\nVolgende speler: {volgendeSpeler}",
+                $"Game Over - Speler: {huidigeSpeler}",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+
+            
+            spelers.Add(spelers[0]); 
+            spelers.RemoveAt(0); 
+
+            if (result == MessageBoxResult.Yes)
             {
-                StartNewGame_Click(null, null);
+                
+                string nieuweSpeler = spelers[0];
+                MessageBox.Show($"Speler {nieuweSpeler} is nu aan de beurt!", "Volgende Beurt", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                Title = $"Mastermind - Beurt van: {nieuweSpeler}";
+                InitializeGame();
+                StartCountDown();
             }
             else
             {
+                MessageBox.Show("Het spel eindigt hier. Bedankt voor het spelen!", "Einde Spel", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.Close();
+            }
+        }
+
+
+
+
+
+
+
+
+        // --------------------------- New StartGame Method ---------------------------
+
+        private void StartGame()
+        {
+            spelers.Clear();
+
+            do
+            {
+                string naam = Microsoft.VisualBasic.Interaction.InputBox(
+                    "Voer de naam van een speler in:",
+                    "Nieuwe Speler",
+                    "");
+
+                if (string.IsNullOrWhiteSpace(naam))
+                {
+                    MessageBox.Show("Naam mag niet leeg zijn. Probeer opnieuw.", "Fout", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    continue;
+                }
+
+                spelers.Add(naam);
+
+            } while (MessageBox.Show("Wil je nog een speler toevoegen?", "Meer Spelers", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes);
+
+            if (spelers.Count > 0)
+            {
+                MessageBox.Show($"Spelers: {string.Join(", ", spelers)}", "Spelerslijst", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                MessageBox.Show("Geen spelers toegevoegd. Het spel kan niet starten.", "Fout", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -116,7 +175,7 @@ namespace Mastermind
 
             if (selectedColors.Any(color => color == "Transparent"))
             {
-                MessageBox.Show("Selecteer vier kleuren!", "Foutief", MessageBoxButton.OK);
+                MessageBox.Show("Selecteer vier kleuren!", "Fout", MessageBoxButton.OK);
                 return;
             }
 
@@ -183,18 +242,32 @@ namespace Mastermind
 
             if (correctPosition == 4)
             {
-                AddHighscore(spelerNaam, attempts, totalScore);
+                AddHighscore(spelers[0], attempts, totalScore);
                 timer.Stop();
-                if (MessageBox.Show($"Proficiat! Je hebt de code gekraakt in {attempts} pogingen!\rSpel herstarten?",
-                                    "WINNER WINNER CHICKEN DINNER", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+
+                
+                spelers.Add(spelers[0]);
+                spelers.RemoveAt(0);
+
+                string nieuweSpeler = spelers[0];
+                MessageBoxResult result = MessageBox.Show(
+                    $"Proficiat! Speler {spelers[^1]} heeft de code gekraakt in {attempts} pogingen!\n\nSpeler {nieuweSpeler} is nu aan de beurt.\nWil je een nieuw spel starten?",
+                    $"Speler {spelers[^1]} wint!",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Information);
+
+                if (result == MessageBoxResult.Yes)
                 {
                     InitializeGame();
+                    StartCountDown();
                 }
                 else
                 {
+                    MessageBox.Show("Het spel eindigt hier. Bedankt voor het spelen!", "Einde Spel", MessageBoxButton.OK, MessageBoxImage.Information);
                     Application.Current.Shutdown();
                 }
             }
+
 
             AddAttemptToHistory(selectedColors, feedbackBorders);
         }
@@ -266,8 +339,6 @@ namespace Mastermind
             this.Title = $"Poging {attempts}";
         }
 
-        // --------------------------- Helper Methods ---------------------------
-
         private void ResetAllColors()
         {
             List<Ellipse> ellipses = new List<Ellipse> { kleur1, kleur2, kleur3, kleur4 };
@@ -304,29 +375,20 @@ namespace Mastermind
             }
         }
 
-        private void Toggledebug()
-        {
-            if (cheatCode.Visibility == Visibility.Hidden)
-            {
-                cheatCode.Visibility = Visibility.Visible;
-            }
-            else if (cheatCode.Visibility == Visibility.Visible)
-            {
-                cheatCode.Visibility = Visibility.Hidden;
-            }
-        }
-
         private void CheatCode_KeyDown(object sender, KeyEventArgs e)
         {
-            if (cheatCode.Visibility == Visibility.Hidden)
+            if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key == Key.F12)
             {
-                cheatCode.Visibility = Visibility.Visible;
-                Title = "Mastermind (DEBUG MODE)";
-            }
-            else
-            {
-                cheatCode.Visibility = Visibility.Hidden;
-                Title = "Mastermind";
+                if (cheatCode.Visibility == Visibility.Hidden)
+                {
+                    cheatCode.Visibility = Visibility.Visible;
+                    Title = "Mastermind (DEBUG MODE)";
+                }
+                else
+                {
+                    cheatCode.Visibility = Visibility.Hidden;
+                    Title = "Mastermind";
+                }
             }
         }
 
@@ -340,15 +402,6 @@ namespace Mastermind
             }
         }
 
-        private string StartGame()
-        {
-            string naam = Microsoft.VisualBasic.Interaction.InputBox(
-                "Welkom bij Mastermind! Voer je naam in om te beginnen (druk op Annuleren om het spel niet te starten):",
-                "Speler Naam", "");
-
-            return string.IsNullOrWhiteSpace(naam) ? null : naam;
-        }
-
         private void StartNewGame_Click(object sender, RoutedEventArgs e)
         {
             if (timer.IsEnabled)
@@ -356,16 +409,12 @@ namespace Mastermind
                 timer.Stop();
             }
 
-            spelerNaam = StartGame();
+            StartGame();
 
-            if (!string.IsNullOrEmpty(spelerNaam))
+            if (spelers.Count > 0)
             {
                 InitializeGame();
                 StartCountDown();
-            }
-            else
-            {
-                MessageBox.Show("Geen naam ingevoerd. Timer start niet.", "Waarschuwing", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
