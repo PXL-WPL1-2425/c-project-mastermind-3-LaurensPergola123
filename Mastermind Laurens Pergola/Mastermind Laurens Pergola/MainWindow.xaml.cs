@@ -302,18 +302,30 @@ namespace Mastermind
 
             for (int i = 0; i < selectedColors.Length; i++)
             {
+                // Tooltip adhv feedbackBorderkleuren
+
+                string tooltipText = feedbackBorders[i] == Brushes.DarkRed
+                    ? "Juiste kleur, juiste positie"
+                    : feedbackBorders[i] == Brushes.Wheat
+                        ? "Juiste kleur, foute positie"
+                        : "Foute kleur";
+
                 Ellipse colorBox = new Ellipse
                 {
                     Width = 50,
                     Height = 50,
                     Fill = GetBrushFromColorName(selectedColors[i]),
                     StrokeThickness = 5,
-                    Stroke = feedbackBorders[i]
+                    Stroke = feedbackBorders[i],
+                    ToolTip = tooltipText 
                 };
+
                 attemptPanel.Children.Add(colorBox);
             }
+
             historyPanel.Children.Add(attemptPanel);
         }
+
 
         private void UpdateScoreLabel(string[] selectedColors)
         {
